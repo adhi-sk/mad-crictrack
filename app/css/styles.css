@@ -99,10 +99,48 @@
     background: var(--pitch); color: #F3EDE0; margin: 0 20px 14px; border-radius: 16px;
     padding: 18px 20px 16px; position: relative; overflow: hidden;
   }
+  .jumbotron-main-row {
+	  display: flex;
+	  align-items: center;
+	  justify-content: space-between;
+	  gap: 12px;
+	}
   .jumbotron .innings-label { font-size: 12.5px; color: #CFE3DA; margin-bottom: 2px; }
-  .jumbotron .score-row { display: flex; align-items: baseline; gap: 10px; font-size: 30px;}
-  .jumbotron .score { font-family: var(--font-score); font-size: 42px; font-weight: 700; letter-spacing: -1px; }
-  .jumbotron .overs { font-family: var(--font-score); font-size: 15px; color: #CFE3DA; }
+  .jumbotron .score-row { display: inline-flex;
+	  align-items: baseline;
+	  gap: 8px;
+	  font-size: clamp(18px, 4vw, 24px);
+	  font-weight: 600;
+	  flex-wrap: wrap;
+	}
+
+  .jumbotron .score { font-family: var(--font-score);
+	  font-size: clamp(30px, 7vw, 40px);
+	  font-weight: 700;
+	  letter-spacing: -1px;
+	}
+  .jumbotron .overs { font-family: var(--font-score);
+	  font-size: 13.5px;
+	  color: #CFE3DA;
+	}
+  .jumbotron-right-stats {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: flex-end;
+	  gap: 4px;
+	  flex-shrink: 0;
+	}
+  .jumbotron-right-stats .stat-pill {
+	  font-family: var(--font-score);
+	  font-size: 12.5px;
+	  color: #CFE3DA;
+	  white-space: nowrap;
+	}
+
+  .jumbotron-right-stats .target-pill {
+	  color: var(--gold);
+	  font-weight: 600;
+	}
   .jumbotron .rr-row { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12.5px; color: #CFE3DA; }
   .jumbotron .target-line { margin-top: 6px; font-size: 13px; color: var(--gold); font-weight: 600; }
 
@@ -121,8 +159,27 @@
   .ball-dot.extra { color: var(--ink-soft); }
 
   /* ---------- Action grid ---------- */
-  .action-section { padding: 0 20px; }
-  .action-label { font-size: 12.5px; color: var(--ink-soft); margin: 14px 0 8px; }
+  .action-section {	padding: 0 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .action-label { 
+	  font-size: 11.5px;
+	  color: var(--ink-soft);
+	  margin: 8px 0 4px;
+	}
+	
+	/* 7 buttons for runs (0, 1, 2, 3, 4, 5, 6) in one responsive row */
+	.grid.runs-grid {
+	  display: grid;
+	  grid-template-columns: repeat(7, 1fr);
+	  gap: 6px;
+	}
+
+	/* 4 buttons for extras in a single row */
+	.grid.extras-grid {
+	  display: grid;
+	  grid-template-columns: repeat(4, 1fr);
+	  gap: 6px;
+	}
+	
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .grid.six-col { grid-template-columns: repeat(3, 1fr); }
   .run-btn, .ex-btn {
@@ -132,15 +189,73 @@
   .run-btn:active, .ex-btn:active { background: var(--line); }
   .run-btn.four { color: var(--gold); border-color: var(--gold); }
   .run-btn.six { background: var(--gold); color: var(--ink); border-color: var(--gold); }
-  .ex-btn { font-family: var(--font-ui); font-size: 13.5px; }
+	.run-btn {
+		height: 28px;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 6px;
+		border: 1px solid var(--line);
+		background: var(--panel);
+		font-family: var(--font-score);
+		font-size: 14px;
+		font-weight: 700;
+		color: var(--ink);
+		cursor: pointer;
+	}
+	.ex-btn {
+		height: 28px;
+		padding: 0 4px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 6px;
+		border: 1px solid var(--line);
+		background: var(--panel);
+		font-family: var(--font-ui);
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--ink);
+		cursor: pointer;
+		text-align: center;
+	}
+	
+	.grid.two-col-action {
+	  display: grid;
+	  grid-template-columns: 1fr 1fr;
+	  gap: 10px;
+	}
+
   .wicket-btn {
-    grid-column: span 2; padding: 14px 0; border-radius: 10px; border: 1px solid var(--red);
-    background: var(--red); color: #fff; font-family: var(--font-ui); font-weight: 700; font-size: 14.5px; cursor: pointer;
+	width: 100%;
+	padding: 10px 0;
+	border-radius: 8px;
+	border: 1px solid var(--red);
+	background: var(--red);
+	color: #fff;
+	font-family: var(--font-ui);
+	font-weight: 700;
+	font-size: 13.5px;
+	cursor: pointer;
   }
   .undo-btn {
-    grid-column: span 2; padding: 14px 0; border-radius: 10px; border: 1px solid var(--line);
-    background: transparent; color: var(--ink-soft); font-family: var(--font-ui); font-weight: 600; font-size: 14.5px; cursor: pointer;
+	width: 100%;
+	padding: 10px 0;
+	border-radius: 8px;
+	border: 1px solid var(--line);
+	background: transparent;
+	color: var(--ink-soft);
+	font-family: var(--font-ui);
+	font-weight: 600;
+	font-size: 13.5px;
+	cursor: pointer;
   }
+  /* Modal action buttons side by side */
+	.modal-actions-row {
+	  display: flex;
+	  gap: 10px;
+	}
   .wicket-btn:disabled, .undo-btn:disabled { opacity: 0.4; }
 
   /* ---------- Sheet / modal ---------- */
@@ -149,8 +264,13 @@
     justify-content: center; z-index: 40;
   }
   .sheet {
-    width: 100%; max-width: 560px; background: var(--cream); border-radius: 18px 18px 0 0;
-    padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px)); max-height: 85vh; overflow-y: auto;
+    width: 100%;
+    max-width: 560px;
+    background: var(--cream);
+    border-radius: 18px 18px 0 0;
+    padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    max-height: 85dvh; /* dvh adjusts dynamically when browser bars retract */
+    overflow-y: auto;
   }
   .sheet h2 { font-size: 17px; margin: 4px 0 14px; }
   .sheet .row-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -215,6 +335,11 @@
     border-collapse: collapse;
     font-size: 13.5px;
   }
+  .batting-table th,
+  .batting-table td {
+    padding: 8px 6px;
+    font-size: 12.5px;
+  }
   .batting-table th {
     text-align: right;
     color: var(--ink-soft);
@@ -225,12 +350,12 @@
   }
   .batting-table th:first-child,
   .batting-table td:first-child {
-    text-align: left;
+    text-align: left !important;
     padding-left: 14px;
   }
   .batting-table th:last-child,
   .batting-table td:last-child {
-    padding-right: 14px;
+    padding-right: 10px;
   }
   .batting-table td {
     padding: 9px 10px;
@@ -280,6 +405,32 @@
     cursor: pointer;
   }
   .share-btn:active, .download-btn:active { opacity: 0.8; }
+	
+	.control-btn {
+	  width: 100%;
+	  height: 32px;
+	  padding: 0 8px;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  border-radius: 8px;
+	  border: 1px solid var(--line);
+	  background: var(--panel);
+	  font-family: var(--font-ui);
+	  font-size: 12.5px;
+	  font-weight: 600;
+	  color: var(--ink);
+	  cursor: pointer;
+	}
+
+	.control-btn:active {
+	  background: var(--line);
+	}
+
+	.control-btn:disabled {
+	  opacity: 0.4;
+	  cursor: not-allowed;
+	}
 
   /* Clean layout when saving or printing as PDF */
   @media print {
@@ -288,5 +439,62 @@
     .topbar .icon-btn, .result-actions, #btn-new-match { display: none !important; }
     .result-banner { background: #1B4D3E !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .card-block { page-break-inside: avoid; }
-    table.score-table th, table.score-table td { border-bottom: 1px solid #ccc !important; }
+    table.score-table th, table.score-table td { padding: 6px 3px; font-size: 12px; }
   }
+  
+  @media (max-width: 380px) {
+  .screen, .card-block, .section-card, .jumbotron, .action-section, .over-strip {
+    margin-left: 10px;
+    margin-right: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .run-btn, .ex-btn {
+    padding: 10px 0;
+    font-size: 15px;
+  }
+  
+  .wicket-btn, .undo-btn {
+    padding: 11px 0;
+    font-size: 13.5px;
+  }
+  
+  .batting-table th, .batting-table td {
+    padding: 6px 3px;
+    font-size: 11.5px;
+  }
+  
+  #row-select-bowler {
+    padding: 10px 14px;
+    font-style: italic;
+  }
+  #row-select-bowler:active {
+    background: var(--line);
+  }
+  .control-btn {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.control-btn:active {
+  background: var(--line);
+}
+
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+}

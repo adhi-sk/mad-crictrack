@@ -94,7 +94,12 @@ class ScoringEngine:
         bowler = bowling.get_player(delivery.bowler)
         if delivery.is_legal:
             bowler.balls_bowled += 1
-        bowler.runs_conceded += delivery.total_runs
+        
+        # Byes and Leg-byes are not debited against the bowler
+        if delivery.extra_type not in ("bye", "leg_bye"):
+            bowler.runs_conceded += delivery.total_runs
+        else:
+            bowler.runs_conceded += delivery.runs
 
         # Byes/leg-byes aren't credited to the batsman; wides aren't a "ball faced"
         if delivery.extra_type != "wide":
@@ -106,14 +111,6 @@ class ScoringEngine:
                     batsman.fours += 1
                 if delivery.runs == 6:
                     batsman.sixes += 1
-
-        if delivery.is_wicket and delivery.wicket_type != "run_out":
-            bowler.wickets += 1
-
-        if delivery.is_wicket:
-            out_player = batting.get_player(delivery.player_out)
-            out_player.is_out = True
-            out_player.out_description = f"{delivery.wicket_type} b {delivery.bowler}"
 
     def _rotate_strike(self, delivery: Delivery):
         # Calculate runs physically completed between wickets
