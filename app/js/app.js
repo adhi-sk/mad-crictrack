@@ -73,7 +73,12 @@ if ("serviceWorker" in navigator) {
     inn.overs.forEach(o => o.deliveries.forEach(d => { if (isLegal(d)) n++; }));
     return n;
   }
-  function isLegal(d) { return d.extraType !== "wide" && d.extraType !== "no_ball"; }
+  function isLegal(d) {
+    return d.extraType !== "wide" &&
+           d.extraType !== "no_ball" &&
+           d.extraType !== "no_ball_bye" &&
+           d.extraType !== "no_ball_leg_bye";
+  }
   function totalRuns(inn) {
     let r = 0;
     inn.overs.forEach(o => o.deliveries.forEach(d => { r += d.runs + d.extraRuns; }));
@@ -156,17 +161,22 @@ if ("serviceWorker" in navigator) {
     const bowler = getPlayer(wKey, d.bowler);
     if (isLegal(d)) bowler.ballsBowled += 1;
     
-    // Byes and Leg byes are fielding extras, not charged to the bowler
-    if (d.extraType !== "bye" && d.extraType !== "leg_bye") {
-      bowler.runsConceded += d.runs + d.extraRuns;
+    // Bowler conceded runs calculation:
+    // For pure byes/leg-byes or NB byes/leg-byes, additional runs are fielding extras
+    if (d.extraType === "bye" || d.extraType === "leg_bye") {
+      bowler.runsConceded += d.runs; // fielding extras not charged to bowler
+    } else if (d.extraType === "no_ball_bye" || d.extraType === "no_ball_leg_bye") {
+      // 1 penalty run charged to bowler + any runs off bat (0)
+      bowler.runsConceded += 1 + d.runs;
     } else {
-      bowler.runsConceded += d.runs; // only runs off the bat (if any)
+      bowler.runsConceded += d.runs + d.extraRuns;
     }
 
     if (d.extraType !== "wide") {
       const bat = getPlayer(bKey, d.batsman);
       bat.balls += 1;
-      if (d.extraType !== "bye" && d.extraType !== "leg_bye") {
+      // Runs off bat are credited only if not a bye or leg-bye
+      if (d.extraType !== "bye" && d.extraType !== "leg_bye" && d.extraType !== "no_ball_bye" && d.extraType !== "no_ball_leg_bye") {
         bat.runs += d.runs;
         if (d.runs === 4) bat.fours += 1;
         if (d.runs === 6) bat.sixes += 1;
@@ -338,9 +348,10 @@ if ("serviceWorker" in navigator) {
     const battingName = teamObj(bKey).name;
     const rrr = requiredRunRate(inn);
 
+    const inningsNum = state.innings.indexOf(inn) + 1;
+    const inningsLabelText = inningsNum === 1 ? "1st Innings" : "2nd Innings";
+
     let jumbo = `<div class="jumbotron">
-      <div class="innings-label">Innings ${state.innings.indexOf(inn) + 1} of ${Math.min(state.innings.length + (inn.isComplete?0:1),2)}</div>
-      
       <div class="jumbotron-main-row">
         <div class="score-row">
           ${esc(battingName)} : 
@@ -354,7 +365,10 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
 
-      ${inn.target != null ? `<div class="target-line">Need ${Math.max(inn.target - totalRuns(inn),0)} runs off ${Math.max(inn.oversLimit*6 - legalBalls(inn),0)} balls &middot; Req.RR: ${rrr ?? "&ndash;"}</div>` : ""}
+      <div class="jumbotron-bottom-row">
+        ${inn.target != null ? `<div class="target-line">Need ${Math.max(inn.target - totalRuns(inn),0)} runs off ${Math.max(inn.oversLimit*6 - legalBalls(inn),0)} balls &middot; Req.RR:${rrr ?? "&ndash;"}</div>` : `<div></div>`}
+        <div class="innings-label-bottom">${inningsLabelText}</div>
+      </div>
     </div>`;
 
     const striker = state.striker ? getPlayer(bKey, state.striker) : null;
@@ -404,7 +418,13 @@ if ("serviceWorker" in navigator) {
     const overNow = inn.overs[inn.overs.length - 1];
     let dots = "";
     if (overNow) {
-      dots = `<div class="over-strip" style="align-items: center;"><span style="font-size: 13px; font-weight: 600; color: var(--ink-soft); white-space: nowrap;">This Over:</span>` + overNow.deliveries.map(dotFor).join("") + `</div>`;
+      // If the latest over is complete and we haven't bowled in the new over yet, don't show the previous over's balls
+      const isOverFinished = legalCount(overNow) >= 6;
+      if (!isOverFinished) {
+        dots = `<div class="over-strip" style="align-items: center;"><span style="font-size: 13px; font-weight: 600; color: var(--ink-soft); white-space: nowrap;">This Over:</span>` + overNow.deliveries.map(dotFor).join("") + `</div>`;
+      } else {
+        dots = `<div class="over-strip" style="align-items: center;"><span style="font-size: 13px; font-weight: 600; color: var(--ink-soft); white-space: nowrap;">This Over:</span></div>`;
+      }
     }
 
     const canWicket = !!state.striker;
@@ -428,13 +448,10 @@ if ("serviceWorker" in navigator) {
         <button class="ex-btn" data-extra="bye">Bye</button>
         <button class="ex-btn" data-extra="leg_bye">Leg bye</button>
       </div>
-      <div class="action-label">Batter Controls</div>
-      <div class="grid two-col-action">
-        <button class="control-btn" id="btn-swap-strike" ${state.striker && state.nonStriker ? "" : "disabled"}>⇄ Strike Swap</button>
-        <button class="control-btn" id="btn-retire-hurt" ${state.striker || state.nonStriker ? "" : "disabled"}>Retire Hurt</button>
-      </div>
-      <div class="action-label">&nbsp;</div>
-      <div class="grid two-col-action">
+      <div class="action-label">Match & Batter Controls</div>
+      <div class="grid four-col-action">
+        <button class="control-btn" id="btn-swap-strike" ${state.striker && state.nonStriker ? "" : "disabled"}>⇄ Swap</button>
+        <button class="control-btn" id="btn-retire-hurt" ${state.striker || state.nonStriker ? "" : "disabled"}>Retire</button>
         <button class="wicket-btn" id="btn-wicket" ${canWicket?"":"disabled"}>Wicket</button>
         <button class="undo-btn" id="btn-undo" ${history.length?"":"disabled"}>Undo</button>
       </div>
@@ -495,7 +512,9 @@ if ("serviceWorker" in navigator) {
   function dotFor(d) {
     if (d.isWicket) return `<div class="ball-dot wicket">W</div>`;
     if (d.extraType === "wide") return `<div class="ball-dot extra">wd${d.extraRuns>1?'+'+(d.extraRuns-1):''}</div>`;
-    if (d.extraType === "no_ball") return `<div class="ball-dot extra">nb${d.extraRuns>1?'+'+(d.extraRuns-1):''}</div>`;
+    if (d.extraType === "no_ball") return `<div class="ball-dot extra">nb${(d.runs>0?'+'+d.runs:(d.extraRuns>1?'+'+(d.extraRuns-1):''))}</div>`;
+    if (d.extraType === "no_ball_bye") return `<div class="ball-dot extra">nb+${d.extraRuns-1}b</div>`;
+    if (d.extraType === "no_ball_leg_bye") return `<div class="ball-dot extra">nb+${d.extraRuns-1}lb</div>`;
     if (d.extraType === "bye") return `<div class="ball-dot extra">${d.extraRuns}b</div>`;
     if (d.extraType === "leg_bye") return `<div class="ball-dot extra">${d.extraRuns}lb</div>`;
     if (d.runs === 4 || d.runs === 6) return `<div class="ball-dot boundary">${d.runs}</div>`;
@@ -631,6 +650,25 @@ if ("serviceWorker" in navigator) {
           <button class="ghost-btn" id="modal-match-cancel" style="flex:1; margin-top:0;">Undo / Back</button>
           <button class="primary-btn" id="modal-match-confirm" style="flex:1; margin-top:0;">Confirm & Finish</button>
         </div>`;
+    } else if (m.type === "noBallOptions") {
+      const options = m.subType === "bat" ? [0, 1, 2, 3, 4, 6] : [1, 2, 3, 4];
+      inner = `<h2>${m.label}</h2>
+        <div class="action-label" style="margin-bottom:6px;">Runs source:</div>
+        <div class="row-btns">
+          <div class="opt ${m.subType==='bat'?'selected':''}" data-nb-type="bat">Off Bat</div>
+          <div class="opt ${m.subType==='bye'?'selected':''}" data-nb-type="bye">Byes</div>
+          <div class="opt ${m.subType==='leg_bye'?'selected':''}" data-nb-type="leg_bye">Leg Byes</div>
+        </div>
+        <div class="action-label" style="margin-bottom:6px;">Additional runs scored:</div>
+        <div class="row-btns">
+          ${options.map(v => `<div class="opt ${m.value===v?'selected':''}" data-val="${v}">
+            ${m.subType === 'bat' ? (v === 0 ? "NB only (+1)" : `${v} runs + 1 NB`) : `+${v} ${m.subType === 'bye' ? 'Bye' : 'Leg Bye'} (+1 NB)`}
+          </div>`).join("")}
+        </div>
+        <div class="modal-actions-row">
+          <button class="ghost-btn" id="modal-cancel" style="margin-top:8px; flex:1;">Cancel</button>
+          <button class="primary-btn" id="modal-confirm" style="margin-top:8px; flex:1;" ${m.value===null?"disabled":""}>Confirm</button>
+        </div>`;
     }
     const wrap = document.createElement("div");
     wrap.className = "sheet-overlay";
@@ -659,6 +697,13 @@ if ("serviceWorker" in navigator) {
     });
     document.querySelectorAll("[data-who]").forEach(el => {
       el.onclick = () => { m.who = el.dataset.who; renderModalRefresh(); };
+    });
+	document.querySelectorAll("[data-nb-type]").forEach(el => {
+      el.onclick = () => {
+        m.subType = el.dataset.nbType;
+        m.value = m.subType === "bat" ? 0 : 1;
+        renderModalRefresh();
+      };
     });
     const confirmBtn = document.getElementById("modal-confirm");
     if (confirmBtn) confirmBtn.onclick = () => resolveModal();
@@ -727,6 +772,19 @@ if ("serviceWorker" in navigator) {
         state.nonStriker = null;
       }
       closeModal();
+      render();
+      advanceIfNeeded();
+    } else if (m.type === "noBallOptions") {
+      closeModal();
+      if (m.subType === "bat") {
+        recordBall({ runs: m.value, extraType: "no_ball", extraRuns: 1 });
+      } else if (m.subType === "bye") {
+        // 1 NB penalty + m.value byes
+        recordBall({ runs: 0, extraType: "no_ball_bye", extraRuns: 1 + m.value });
+      } else if (m.subType === "leg_bye") {
+        // 1 NB penalty + m.value leg byes
+        recordBall({ runs: 0, extraType: "no_ball_leg_bye", extraRuns: 1 + m.value });
+      }
       render();
       advanceIfNeeded();
     }
@@ -916,12 +974,10 @@ if ("serviceWorker" in navigator) {
           });
         } else if (type === "no_ball") {
           openModal({
-            type: "extraRuns", 
-            label: "No Ball — runs off bat / extras run?",
-            options: [0, 1, 2, 3, 4, 6], 
-            value: 0, 
-            optionLabel: v => v === 0 ? "NB only (+1)" : `${v} runs + 1 NB`,
-            onConfirm: (v) => recordBall({ runs: v, extraType: "no_ball", extraRuns: 1 }),
+            type: "noBallOptions",
+            label: "No Ball — Select Outcome",
+            subType: "bat", // "bat" | "bye" | "leg_bye"
+            value: 0,
           });
         } else {
           openModal({

@@ -33,11 +33,12 @@ class Team:
     name: str
     players: List[Player] = field(default_factory=list)
 
-    def get_player(self, name: str) -> Player:
+    def get_player(self, name: Optional[str]) -> Player:
+        safe_name = (name or "Unknown").strip()
         for p in self.players:
-            if p.name.lower() == name.lower():
+            if p.name.lower() == safe_name.lower():
                 return p
-        player = Player(name=name)
+        player = Player(name=safe_name)
         self.players.append(player)
         return player
 
@@ -55,7 +56,7 @@ class Delivery:
 
     @property
     def is_legal(self) -> bool:
-        return self.extra_type not in ("wide", "no_ball")
+        return self.extra_type not in ("wide", "no_ball", "no_ball_bye", "no_ball_leg_bye")
 
     @property
     def total_runs(self) -> int:
