@@ -94,18 +94,19 @@ class ScoringEngine:
         bowler = bowling.get_player(delivery.bowler)
         if delivery.is_legal:
             bowler.balls_bowled += 1
-        
-        # Byes and Leg-byes are not debited against the bowler
-        if delivery.extra_type not in ("bye", "leg_bye"):
-            bowler.runs_conceded += delivery.total_runs
-        else:
-            bowler.runs_conceded += delivery.runs
 
-        # Byes/leg-byes aren't credited to the batsman; wides aren't a "ball faced"
+        if delivery.extra_type in ("bye", "leg_bye"):
+            bowler.runs_conceded += delivery.runs
+        elif delivery.extra_type in ("no_ball_bye", "no_ball_leg_bye"):
+            # Only 1 penalty run charged to bowler
+            bowler.runs_conceded += 1 + delivery.runs
+        else:
+            bowler.runs_conceded += delivery.total_runs
+
         if delivery.extra_type != "wide":
             batsman = batting.get_player(delivery.batsman)
             batsman.balls_faced += 1
-            if delivery.extra_type not in ("bye", "leg_bye"):
+            if delivery.extra_type not in ("bye", "leg_bye", "no_ball_bye", "no_ball_leg_bye"):
                 batsman.runs += delivery.runs
                 if delivery.runs == 4:
                     batsman.fours += 1
